@@ -388,11 +388,15 @@ function culturefeed_ui_block_info() {
   $block['user_activities']['info'] = t('User activities');
   $block['user_activities']['cache'] = DRUPAL_NO_CACHE;
 
-  $block['user_liked_locations']['info'] = t('User liked locations');
-  $block['user_liked_locations']['cache'] = DRUPAL_NO_CACHE;
+  if (module_exists('cnapi')) {
+    $block['user_liked_locations']['info'] = t('User liked locations');
+    $block['user_liked_locations']['cache'] = DRUPAL_NO_CACHE;
+  }
 
-  $block['top_events']['info'] = t('Top events');
-  $block['top_events']['cache'] = DRUPAL_CACHE_CUSTOM;
+  if (module_exists('cnapi')) {
+    $block['top_events']['info'] = t('Top events');
+    $block['top_events']['cache'] = DRUPAL_CACHE_CUSTOM;
+  }
 
   $block['search_users']['info'] = t('Search users');
   $block['search_users']['cache'] = DRUPAL_NO_CACHE;
@@ -400,8 +404,10 @@ function culturefeed_ui_block_info() {
   $block['similar_users']['info'] = t('Similar users');
   $block['similar_users']['cache'] = DRUPAL_CACHE_CUSTOM;
 
-  $block['related_events']['info'] = t('Related events');
-  $block['related_events']['cache'] = DRUPAL_CACHE_PER_PAGE;
+  if (!module_exists('cnapi')) {
+    $block['related_events']['info'] = t('Related events');
+    $block['related_events']['cache'] = DRUPAL_CACHE_PER_PAGE;
+  }
 
   $block['recommendations']['info'] = t('Recommendations');
   $block['recommendations']['cache'] = DRUPAL_CACHE_CUSTOM;

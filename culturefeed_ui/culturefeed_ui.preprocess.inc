@@ -108,7 +108,13 @@ function template_preprocess_culturefeed_ui_activity_summary(&$variables) {
     $node = l($activity->nodeTitle, 'node/' . $activity->nodeId);
   }
   else {
-    $node = cnapi_url_dp2dul($activity->nodeTitle, array($activity->contentType => $activity->nodeId, 'title' => $activity->nodeTitle));
+    if (is_callable('cnapi_url_dp2dul')) {
+      $node = cnapi_url_dp2dul($activity->nodeTitle, array($activity->contentType => $activity->nodeId, 'title' => $activity->nodeTitle));
+    }
+    else {
+      $path = culturefeed_cdb_entity_path($activity->contentType, $activity->nodeId);
+      $node = l($activity->nodeTitle, $path);
+    }
   }
 
   $type_prefix = '';

@@ -242,26 +242,41 @@ function culturefeed_ui_block_recent_activities_view() {
 }
 
 function culturefeed_ui_block_related_events_is_visible() {
-  $request = cnapi_ui_get_active_request();
+  // We act upon cnapi requests.
+  if (is_callable('cnapi_ui_get_active_request')) {
+    $request = cnapi_ui_get_active_request();
 
-  // We only act upon cnapi requests.
-  if (!$request) {
-    return FALSE;
+    if ($request) {
+      $is_event = array_search('event', array_keys($request)) !== FALSE;
+
+      return $is_event;
+    }
   }
 
-  $is_event = array_search('event', array_keys($request)) !== FALSE;
-
-  if (!$is_event) {
-    return FALSE;
-  }
-
-  return TRUE;
+  // Or when the event context is set.
+  return culturefeed_context_isset('event');
 }
 
 function culturefeed_ui_block_related_events_view() {
-  $request = cnapi_ui_get_active_request();
+  if (is_callable('cnapi_ui_get_active_request')) {
+    $request = cnapi_ui_get_active_request();
 
-  $cdbid = $request['event'];
+    if ($request) {
+      $cdbid = $request['event'];
+    }
+  }
+
+  if (!isset($cdbid)) {
+    $context = culturefeed_context_get(__FUNCTION__, 'event');
+
+    if ($context) {
+      $cdbid = $context['cdbid'];
+    }
+  }
+
+  if (!isset($cdbid)) {
+    return;
+  }
 
   $config = array(
     'title' => 'Ontdek ook',

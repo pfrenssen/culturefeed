@@ -324,9 +324,12 @@ function culturefeed_ui_page_recommendation_evaluate($evaluation, $recommendatio
         case 'positive':
 
           // Get event.
-          $event = cnapi_get_event($node_id);
-          $request_detail = array('event' => $event['cdbid'], 'title' => $event['detail']['nl']['title']);
-          $event_url = cnapi_url_dp2dua($request_detail);
+          if (is_callable('cnapi_get_event')) {
+            $event = cnapi_get_event($node_id);
+            $request_detail = array('event' => $event['cdbid'], 'title' => $event['detail']['nl']['title']);
+            $event_url = cnapi_url_dp2dua($request_detail);
+            $destination = $event_url['path'];
+          }
 
           // Check if the user is going or not.
           $user_did_this = FALSE;
@@ -351,7 +354,7 @@ function culturefeed_ui_page_recommendation_evaluate($evaluation, $recommendatio
               'id' => $recommendation_id . '-do-link',
               'class' => array('do-link', 'do-8-link')
             ),
-            '#options' => array('query' => array('destination' => $event_url['path'])),
+            '#options' => array('query' => array('destination' => $destination)),
             '#ajax' => array(),
           );
 
@@ -372,9 +375,6 @@ function culturefeed_ui_page_recommendation_evaluate($evaluation, $recommendatio
 
 function culturefeed_ui_toggle_go($go_id = NULL, $node_id = NULL, $type = 'ajax') {
   $success = TRUE;
-
-  // Get event.
-  $event = cnapi_get_event($node_id);
 
   // Check if the user is going or not.
   $user_did_this = FALSE;
@@ -404,9 +404,15 @@ function culturefeed_ui_toggle_go($go_id = NULL, $node_id = NULL, $type = 'ajax'
     $commands = array();
 
     if ($success) {
-
-      $request_detail = array('event' => $event['cdbid'], 'title' => $event['detail']['nl']['title']);
-      $event_url = cnapi_url_dp2dua($request_detail);
+      if (is_callable('cnapi_get_event')) {
+        // Get event.
+        $event = cnapi_get_event($node_id);
+        $request_detail = array('event' => $event['cdbid'], 'title' => $event['detail']['nl']['title']);
+        $destination = cnapi_url_dp2dua($request_detail);
+      }
+      else {
+        $destination = culturefeed_cdb_entity_url('event', $node_id);
+      }
 
       $action_event = array(
         '#type' => 'link',
@@ -416,7 +422,7 @@ function culturefeed_ui_toggle_go($go_id = NULL, $node_id = NULL, $type = 'ajax'
           'id' => $go_id . '-do-link',
           'class' => array('do-link', 'do-8-link')
         ),
-        '#options' => array('query' => array('destination' => $event_url['path'])),
+        '#options' => array('query' => array('destination' => $destination)),
         '#ajax' => array(),
       );
       $link = drupal_render($action_event);
@@ -495,8 +501,14 @@ function culturefeed_ui_page_activities($type = NULL) {
       $data = l($activity->nodeTitle, 'node/' . $activity->nodeId);
     }
     elseif (in_array($activity->contentType, array('actor', 'event', 'production'))) {
-      $request_dp = array($activity->contentType => $activity->nodeId, 'title' => $activity->nodeTitle);
-      $data = cnapi_url_dp2dul($activity->nodeTitle, $request_dp);
+      if (is_callable('cnapi_url_dp2dul')) {
+        $request_dp = array($activity->contentType => $activity->nodeId, 'title' => $activity->nodeTitle);
+        $data = cnapi_url_dp2dul($activity->nodeTitle, $request_dp);
+      }
+      else {
+        $path = culturefeed_cdb_entity_path($activity->contentType, $activity->nodeId);
+        $data = l($activity->nodeTitle, $path);
+      }
     }
 
     $rows[] = array(
@@ -742,24 +754,31 @@ function culturefeed_ui_page_users_for_content_activity($activity_type, $content
     $node = node_load($id);
 
     $object_title = $node->title;
-    $object_link = array('path' => 'node/' . $node->nid);
+    $link = array('path' => 'node/' . $node->nid);
   }
   else {
-    $request = array('action' => 'detail', 'type' => $content_type, 'query' => array('cdbid' => $id));
-    $object = cnapi_get($request);
+    if (is_callable('cnapi_get')) {
+      $request = array('action' => 'detail', 'type' => $content_type, 'query' => array('cdbid' => $id));
+      $object = cnapi_get($request);
 
-    $object_title = $object['detail']['nl']['title'];
-    $object_link = cnapi_url_dp2dua(array($content_type => $id, 'title' => $object_title));
+      $object_title = $object['detail']['nl']['title'];
+      $object_link = cnapi_url_dp2dua(array($content_type => $id, 'title' => $object_title));
+      $link = $object_link['path'];
+    }
+    else {
+      $object_title = culturefeed_cdb_entity_title($content_type, $id);
+      $link = culturefeed_cdb_entity_path($content_type, $id);
+    }
   }
 
   switch ($activity_type) {
     case CultureFeed_Activity::TYPE_LIKE:
       $title = 'Zijn vinden dit leuk';
-      $intro = 'Zij vinden <strong>' . l($object_title, $object_link['path']) . '</strong> leuk.';
+      $intro = 'Zij vinden <strong>' . l($object_title, $link) . '</strong> leuk.';
       break;
     case CultureFeed_Activity::TYPE_IK_GA:
       $title = 'Zij gaan hier naartoe';
-      $intro = 'Zij gaan naar <strong>' . l($object_title, $object_link['path']) . '</strong>.';
+      $intro = 'Zij gaan naar <strong>' . l($object_title, $link) . '</strong>.';
       break;
   }
 

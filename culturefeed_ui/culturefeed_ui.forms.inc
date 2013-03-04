@@ -61,10 +61,13 @@ function culturefeed_ui_recommendations_filter_form($form, &$form_state, $zip = 
 
   $form['zip'] = array(
     '#type' => 'textfield',
-    '#autocomplete_path' => 'cnapi/autocomplete/location/cities',
     '#default_value' => $zip ? $zip : '',
     '#size' => 4,
   );
+
+  if (drupal_valid_path('cnapi/autocomplete/location/cities')) {
+    $form['zip']['#autocomplete_path'] = 'cnapi/autocomplete/location/cities';
+  }
 
   $form['markup'] = array(
     '#markup' => ' + ',

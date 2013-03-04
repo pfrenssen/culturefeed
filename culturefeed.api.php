@@ -26,3 +26,25 @@
 function hook_culturefeed_consumer_shared_secret($application_key) {
   return 'shared secret';
 }
+
+/**
+ * Gets the title of the Cdb entity of a given type
+ * and with a given cdbid.
+ *
+ * @param string $type
+ *   Cdb entity type: event, actor or production.
+ * @param string $cdbid
+ *   GUID of the cdb entity.
+ *
+ * @return string
+ *   Title of the corresponding entity.
+ *
+ * @see culturefeed_cdb_entity_title()
+ */
+function hook_culturefeed_cdb_entity_title($type, $cdbid) {
+
+}
+
+function hook_culturefeed_cdb_entity_path($type, $cdbid) {
+
+}

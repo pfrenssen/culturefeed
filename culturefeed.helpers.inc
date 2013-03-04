@@ -255,14 +255,16 @@ function culturefeed_get_nodes_for_cdbids($type, $cdbids) {
     return $nodes;
   }
 
-  $query = array('cdbid' => implode(';', $cdbids), 'pagelength' => count($cdbids));
-  $request = array('action' => 'list_summary', 'type' => $type, 'query' => $query);
+  if (is_callable('cnapi_get')) {
+    $query = array('cdbid' => implode(';', $cdbids), 'pagelength' => count($cdbids));
+    $request = array('action' => 'list_summary', 'type' => $type, 'query' => $query);
 
-  $results = cnapi_get($request);
+    $results = cnapi_get($request);
 
-  if (isset($results['data']) && !empty($results['data'])) {
-    foreach ($results['data'] as $result) {
-      $nodes[$result['cdbid']] = $result;
+    if (isset($results['data']) && !empty($results['data'])) {
+      foreach ($results['data'] as $result) {
+        $nodes[$result['cdbid']] = $result;
+      }
     }
   }
 
@@ -305,4 +307,78 @@ function culturefeed_is_connected($application_key = NULL) {
   $account = DrupalCultureFeed::getLoggedInAccount();
 
   return $account && isset($account->tokens) && !empty($account->tokens[$application_key]);
+}
+
+/**
+ * @param $caller
+ * @param $namespace
+ * @param $attribute
+ */
+function culturefeed_context_get($caller, $attribute) {
+  $namespace = 'cultuurnet';
+
+  if (is_callable('context_get')) {
+    $context = context_get($namespace, $attribute);
+
+    // If an adapter is set, call it and pass our caller to it, so it
+    // knows for which caller it needs to adapt the context.
+    if (isset($context['adapter'])) {
+      $context = call_user_func($context['adapter'], $caller, $context);
+    }
+
+    return $context;
+  }
+
+  return FALSE;
+}
+
+function culturefeed_context_isset($attribute = NULL) {
+  if (is_callable('context_isset')) {
+    $namespace = 'cultuurnet';
+
+    return context_isset($namespace, $attribute);
+  }
+
+  return FALSE;
+}
+
+/**
+ * Gets the title of the Cdb entity of a given type
+ * and with a given cdbid.
+ *
+ * @param string $type
+ *   Cdb entity type: event, actor or production.
+ * @param string $id
+ *   GUID of the cdb entity.
+ * @return string
+ *   Title of the corresponding entity.
+ */
+function culturefeed_cdb_entity_title($type, $id) {
+  return _culturefeed_cdb_entity_value(__FUNCTION__, $type, $id);
+}
+
+/**
+ * Gets the Drupal path of the Cdb entity of a given type
+ * and with a given cdbid.
+ *
+ * @param string $type
+ *   Cdb entity type: event, actor or production.
+ * @param string $id
+ *   GUID of the cdb entity.
+ * @return string
+ *   Title of the corresponding entity.
+ */
+function culturefeed_cdb_entity_path($type, $id) {
+  return _culturefeed_cdb_entity_value(__FUNCTION__, $type, $id);
+}
+
+function _culturefeed_cdb_entity_value($hook, $type, $id) {
+  foreach (module_implements($hook) as $module) {
+    $function = $module . '_' . $hook;
+    $value = $function($type, $id);
+
+    if ($value) {
+      return $value;
+    }
+  }
 }

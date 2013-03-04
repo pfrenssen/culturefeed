@@ -126,7 +126,20 @@ function culturefeed_ui_activity_types() {
 
 function culturefeed_ui_activity_context($cnapi_types = array(), $node_types = array()) {
   $node = menu_get_object();
-  $request = cnapi_ui_get_active_request();
+
+  $request = FALSE;
+  if (is_callable('cnapi_ui_get_active_request')) {
+    $request = cnapi_ui_get_active_request();
+  }
+
+  foreach ($cnapi_types as $type) {
+    $context = culturefeed_context_get(__FUNCTION__, $type);
+
+    if ($context) {
+      $context['cnapi_type'] = $type;
+      break;
+    }
+  }
 
   if ($request) {
     $type = reset(array_intersect($cnapi_types, array_keys($request)));
@@ -136,6 +149,12 @@ function culturefeed_ui_activity_context($cnapi_types = array(), $node_types = a
         'activity_content_type' => culturefeed_activity_content_type_from_cnapi_type($type),
       );
     }
+  }
+  elseif ($context) {
+    return array(
+      'node_id' => $context['cdbid'],
+      'activity_content_type' => culturefeed_activity_content_type_from_cnapi_type($context['cnapi_type']),
+    );
   }
   elseif ($node) {
     if (in_array($node->type, $node_types)) {
@@ -254,8 +273,17 @@ function _culturefeed_ui_do($activity_type, $type, $id) {
     $activity->nodeTitle = $node->title;
   }
   else {
-    $object = cnapi_get(array('action' => 'detail', 'type' => $type, 'query' => array('cdbid' => $id)));
-    $activity->nodeTitle = $object['detail']['nl']['title'];
+    if (is_callable('cnapi_get')) {
+      $object = cnapi_get(array('action' => 'detail', 'type' => $type, 'query' => array('cdbid' => $id)));
+      $activity->nodeTitle = $object['detail']['nl']['title'];
+    }
+    else {
+      $title = culturefeed_cdb_entity_title($type, $id);
+
+      if ($title) {
+        $activity->nodeTitle = $title;
+      }
+    }
   }
 
   try {
@@ -274,18 +302,24 @@ function _culturefeed_ui_do($activity_type, $type, $id) {
 
 function culturefeed_ui_activity_based_goto($content_type, $node_id) {
 
-  // Remember current querystring.
-  $options = array();
-  $options['query'] = $_GET;
-  unset($options['query']['q']);
+  // Remember current query string.
+  $options = array(
+    'query' => drupal_get_query_parameters(),
+  );
 
   if ($content_type == 'page') {
     drupal_goto('node/' . $node_id, $options);
   }
   else {
-    $object = cnapi_get(array('action' => 'detail', 'type' => $content_type, 'query' => array('cdbid' => $node_id)));
-    $request = array($content_type => $node_id, 'title' => $object['detail']['nl']['title']);
-    cnapi_ui_goto($request, $options);
+    if (is_callable('cnapi_get') && is_callable('cnapi_ui_goto')) {
+      $object = cnapi_get(array('action' => 'detail', 'type' => $content_type, 'query' => array('cdbid' => $node_id)));
+      $request = array($content_type => $node_id, 'title' => $object['detail']['nl']['title']);
+      cnapi_ui_goto($request, $options);
+    }
+    else {
+      $path = culturefeed_cdb_entity_path($content_type, $node_id);
+      drupal_goto($path, $options);
+    }
   }
 
 }
