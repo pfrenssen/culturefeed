@@ -148,3 +148,88 @@ function culturefeed_ui_users_search_form_submit($form, &$form_state) {
     $form_state['redirect'] = 'culturefeed/users/search';
   }
 }
+
+
+/**
+ * Implements hook_forms().
+ *
+ * Needed because we need multiple comment forms on the same page, but Drupal
+ * currently can not handle submission of forms with the same form_id on the same page.
+ *
+ * @see http://drupal.org/node/766146
+ * @see http://drupal.org/node/766146
+ */
+function culturefeed_ui_forms($form_id, $args) {
+  $forms = array();
+
+  if (preg_match('/^culturefeed_ui_subcomment_form_(.+)$/', $form_id, $matches)) {
+    $forms[$form_id] = array(
+      'callback' => 'culturefeed_ui_subcomment_form',
+      'callback arguments' => array($matches[1]),
+    );
+  }
+
+  return $forms;
+}
+
+function culturefeed_ui_get_subcomment_form($parent_activity, $context) {
+  return drupal_get_form('culturefeed_ui_subcomment_form_' . $parent_activity, $context);
+}
+
+function culturefeed_ui_subcomment_form($form, &$form_state, $parent_activity, $context) {
+  $form = culturefeed_ui_comment_form($form, $form_state, $context, $parent_activity);
+
+  $form['#submit'] = array('culturefeed_ui_comment_form_submit');
+
+  $form['comment']['#title'] = t('Reactie');
+  $form['submit']['#value'] = t('Verzend reactie');
+
+  return $form;
+}
+
+function culturefeed_ui_comment_form($form, &$form_state, $context, $parent_activity = NULL) {
+  $form['context'] = array(
+    '#type' => 'value',
+    '#value' => $context,
+  );
+
+  $form['parent_activity'] = array(
+    '#type' => 'value',
+    '#value' => $parent_activity,
+  );
+
+  $form['comment'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Schrijf zelf een beoordeling'),
+    '#required' => TRUE,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Verzend beoordeling'),
+  );
+
+  return $form;
+}
+
+function culturefeed_ui_comment_form_submit($form, &$form_state) {
+  $comment = $form_state['values']['comment'];
+  $context = $form_state['values']['context'];
+
+  $cf = DrupalCultureFeed::getLoggedInUserInstance();
+
+  $activity = new CultureFeed_Activity();
+  $activity->type = CultureFeed_Activity::TYPE_COMMENT;
+  $activity->value = $comment;
+  $activity->contentType = $context['activity_content_type'];
+  $activity->nodeId = $context['node_id'];
+  $activity->nodeTitle = $context['node_title'];
+
+  if ($form_state['values']['parent_activity']) {
+    $activity->parentActivity = $form_state['values']['parent_activity'];
+  }
+
+  $activity->userId = DrupalCultureFeed::getLoggedInUserId();
+
+  $cf->createActivity($activity);
+}

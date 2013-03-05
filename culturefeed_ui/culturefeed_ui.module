@@ -351,6 +351,13 @@ function culturefeed_ui_theme() {
       'variables' => array(),
       'template' => 'culturefeed-ui-something-for-you',
     ),
+    'culturefeed_ui_comment' => array(
+      'variables' => array(
+        'comment' => NULL,
+        'context' => NULL,
+      ),
+      'template' => 'culturefeed-ui-comment',
+    ),
   );
 }
 
@@ -417,6 +424,9 @@ function culturefeed_ui_block_info() {
 
   $block['something_for_you']['info'] = t('Something for you?');
   $block['something_for_you']['cache'] = DRUPAL_CACHE_PER_PAGE;
+
+  $block['comments']['info'] = t('Comments');
+  $block['comments']['cache'] = DRUPAL_NO_CACHE;
 
   return $block;
 }

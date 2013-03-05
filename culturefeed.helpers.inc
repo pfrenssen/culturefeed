@@ -382,3 +382,34 @@ function _culturefeed_cdb_entity_value($hook, $type, $id) {
     }
   }
 }
+
+/**
+ * Builds a family tree from a given flat list of activities.
+ *
+ * @param array $activities
+ *   A flat array of activites.
+ */
+function culturefeed_activity_family_tree($activities) {
+  $activity_map = array();
+  $tree = array();
+
+  // First index by id.
+
+  /* @var CultureFeed_Activity $activity */
+  foreach ($activities as $activity) {
+    $activity_map[$activity->id] = new stdClass();
+    $activity_map[$activity->id]->activity = $activity;
+    $activity_map[$activity->id]->children = array();
+  }
+
+  foreach ($activity_map as $activity_info) {
+    if (isset($activity_info->activity->parentActivity)) {
+      $activity_map[$activity_info->activity->parentActivity]->children[] = $activity_info;
+    }
+    else {
+      $tree[] = $activity_info;
+    }
+  }
+
+  return $tree;
+}

@@ -671,3 +671,75 @@ function culturefeed_ui_block_something_for_you_view() {
 function culturefeed_ui_block_something_for_you_is_visible() {
   return user_is_anonymous();
 }
+
+function culturefeed_ui_block_comments_view() {
+  $config = culturefeed_ui_block_comments_config();
+  $context = culturefeed_ui_activity_context($config['cnapi_types'], $config['node_types']);
+
+  $query = new CultureFeed_SearchActivitiesQuery();
+  $query->type = CultureFeed_Activity::TYPE_COMMENT;
+  $query->contentType = $context['activity_content_type'];
+  $query->nodeId = $context['node_id'];
+  $query->max = 100;
+
+  $result = DrupalCultureFeed::searchActivities($query);
+  $comments_tree = culturefeed_activity_family_tree($result->objects);
+
+  if ($context['activity_content_type'] == 'page') {
+    $node = node_load($context['node_id']);
+    $context['node_title'] = $node->title;
+  }
+  else {
+    if (is_callable('cnapi_get')) {
+      $object = cnapi_get(array('action' => 'detail', 'type' => $context['activity_content_type'], 'query' => array('cdbid' => $context['node_id'])));
+      $context['node_title'] = $object['detail']['nl']['title'];
+    }
+    else {
+      $title = culturefeed_cdb_entity_title($context['activity_content_type'], $context['node_id']);
+
+      if ($title) {
+        $context['node_title'] = $title;
+      }
+    }
+  }
+
+  $themed_comments = array(
+    '#type' => 'container',
+    '#attributes' => array(),
+  );
+
+  foreach ($comments_tree as $comment_info) {
+    $themed_comments[] = array(
+      '#type' => 'markup',
+      '#markup' => theme('culturefeed_ui_comment', array(
+        'comment' => $comment_info,
+        'context' => $context,
+      )),
+    );
+  }
+
+  $form = drupal_get_form('culturefeed_ui_comment_form', $context);
+
+  $block = array();
+  $block['content'] = array(
+    '#type' => 'container',
+    'comments' => $themed_comments,
+    'form' => $form,
+  );
+  $block['subject'] = '';
+
+  return $block;
+}
+
+function culturefeed_ui_block_comments_config() {
+  return array(
+    'cnapi_types' => array('page', 'event', 'production', 'actor'),
+    'node_types' => array_keys(node_type_get_types()),
+  );
+}
+
+function culturefeed_ui_block_comments_is_visible() {
+  $config = culturefeed_ui_block_comments_config();
+
+  return _culturefeed_ui_block_users_activity_is_visible($config);
+}
