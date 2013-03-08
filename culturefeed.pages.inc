@@ -105,9 +105,14 @@ function culturefeed_oauth_authorize($application_key = NULL) {
       user_login_finalize();
 
       if (isset($_GET['closepopup'])) {
-
         if (isset($_GET['destination'])) {
-          $action = 'window.opener.location.href="' . url($_GET['destination'], array('absolute' => TRUE)) . '";';
+          $destination = drupal_parse_url($_GET['destination']);
+          $path = $destination['path'];
+          $options = array();
+          $options['query'] = $destination['query'];
+          $options['fragment'] = $destination['fragment'];
+          $options['absolute'] = TRUE;
+          $action = 'window.opener.location.href="' . url($path, $options) . '"';
         }
         else {
           $action = 'window.opener.location.reload();';
@@ -126,12 +131,7 @@ function culturefeed_oauth_authorize($application_key = NULL) {
         print '</html>';
       }
       else {
-        if (isset($_GET['destination'])) {
-          drupal_goto($_GET['destination']);
-        }
-        else {
-          drupal_goto();
-        }
+        drupal_goto();
       }
     }
   }
