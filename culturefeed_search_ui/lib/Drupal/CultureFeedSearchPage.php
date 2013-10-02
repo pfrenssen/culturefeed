@@ -270,6 +270,34 @@ class CultureFeedSearchPage {
   }
 
   /**
+   * Add an Apache Solr input parameter.
+   *
+   * @param \CultuurNet\Search\Parameter\AbstractParameter $parameter
+   *   The parameter to add.
+   *
+   * @return array
+   *   The updated parameters array.
+   */
+  public function addParameter(Parameter\AbstractParameter $parameter) {
+    $this->parameters[] = $parameter;
+    return $this->parameters;
+  }
+
+  /**
+   * Unsets an Apache Solr input parameter.
+   *
+   * @param string $key
+   *   The key of the parameter to unset.
+   *
+   * @return array
+   *   The updated parameters array.
+   */
+  public function unsetParameter($key) {
+    unset($this->parameters[$key]);
+    return $this->parameters;
+  }
+
+  /**
    * Initializes the search with data from the URL query parameters.
    */
   public function initialize() {
